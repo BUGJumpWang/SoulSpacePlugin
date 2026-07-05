@@ -5,6 +5,9 @@
 输入/getbags可以花费初始金额~~开户~~来获取一个名字叫“[SSP] 灵魂空间”的羽毛，右键来打开.
 
 
+
+
+  
 # SoulSpacePlugin - A Minecraft Server Plugin
 depends: Vault  
 This plugin gives you a very big backpack, which can be upgraded.
