@@ -1,0 +1,9 @@
+name: SoulSpacePlugin
+version: '1.2'
+main: com.bugjumpwang.soulSpacePlugin.SoulSpacePlugin
+api-version: '1.21'
+depend: [Vault]
+commands:
+  getbags:
+    description: Get SoulSpace Feather.
+    usage: /getbags
