@@ -1,1 +1,1 @@
-#SoulSpacePlugin - A Minecraft Plugin
+# SoulSpacePlugin - A Minecraft Plugin
