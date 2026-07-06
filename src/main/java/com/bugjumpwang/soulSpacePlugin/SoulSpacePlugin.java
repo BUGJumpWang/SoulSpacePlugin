@@ -26,7 +26,7 @@ public final class SoulSpacePlugin extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.initializeTables();
 
-        getCommand("getbags").setExecutor(new GetBagsCommand());
+        getCommand("ssp").setExecutor(new Commands());
         getServer().getPluginManager().registerEvents(new GUIListener(), this);
 
         getLogger().info("灵魂空间插件成功加载！");

@@ -4,6 +4,14 @@ main: com.bugjumpwang.soulSpacePlugin.SoulSpacePlugin
 api-version: '1.21'
 depend: [Vault]
 commands:
-  getbags:
-    description: Get SoulSpace Feather.
-    usage: /getbags
+  ssp:
+    description: SoulSpacePlugin Main Commands.
+    usage: /ssp <getbags|open|reload>
+    permission: soulspace.use
+permissions:
+  soulspace.use:
+    description: 允许使用 /ssp 命令
+    default: true
+  soulspace.reload:
+    description: 允许重载配置文件
+    default: op
