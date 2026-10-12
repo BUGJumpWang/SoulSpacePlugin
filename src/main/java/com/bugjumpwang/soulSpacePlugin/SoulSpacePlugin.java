@@ -9,6 +9,7 @@ public final class SoulSpacePlugin extends JavaPlugin {
     private static SoulSpacePlugin instance;
     private Economy economy;
     private ConfigManager configManager;
+    private LanguageManager languageManager;
     private DatabaseManager databaseManager;
 
     @Override
@@ -16,6 +17,7 @@ public final class SoulSpacePlugin extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         configManager = new ConfigManager(this);
+        languageManager = new LanguageManager(this);
 
         if (!setupEconomy()) {
             getLogger().severe("未找到Vault！正在卸载插件");
@@ -62,6 +64,10 @@ public final class SoulSpacePlugin extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public LanguageManager getLanguageManager() {
+        return languageManager;
     }
 
     public DatabaseManager getDatabaseManager() {

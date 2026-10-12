@@ -1,12 +1,12 @@
 name: SoulSpacePlugin
-version: '1.2'
+version: '1.4-RELEASE'
 main: com.bugjumpwang.soulSpacePlugin.SoulSpacePlugin
 api-version: '1.21'
 depend: [Vault]
 commands:
   ssp:
     description: SoulSpacePlugin Main Commands.
-    usage: /ssp <getbags|open|reload>
+    usage: /ssp <getbags|open|reload|lang>
     permission: soulspace.use
 permissions:
   soulspace.use:

@@ -2,3 +2,11 @@ first-cost: 2000
 upgrade-cost: 5000
 max-level: 30
 prefix: "&b[SSP] "
+default-language: zh-cn
+storage-type: sqlite
+mysql:
+  host: localhost
+  port: 3306
+  database: soulspace
+  username: root
+  password: ""

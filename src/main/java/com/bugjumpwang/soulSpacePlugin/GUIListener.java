@@ -27,13 +27,7 @@ public class GUIListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (!event.getAction().name().contains("RIGHT")) return;
         ItemStack item = event.getItem();
-        if (item == null || item.getType() != Material.FEATHER) return;
-        if (!item.hasItemMeta()) return;
-        ItemMeta meta = item.getItemMeta();
-        if (!meta.hasDisplayName()) return;
-
-        String expectedName = SoulSpacePlugin.getInstance().getConfigManager().getDisplayName();
-        if (!meta.getDisplayName().equals(expectedName)) return;
+        if (item == null || !SoulSpaceGUI.isSoulFeather(item)) return;
 
         event.setCancelled(true);
         Player player = event.getPlayer();
@@ -83,6 +77,11 @@ public class GUIListener implements Listener {
                         player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
                         handleTraverseClick(player);
                         break;
+                    case 53:
+                        player.playSound(player.getLocation(), Sound.BLOCK_DISPENSER_DISPENSE, 1.0f, 1.0f);
+                        SoulSpaceGUI.sortPage(inv);
+                        player.sendMessage(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "sort-done"));
+                        break;
                     default:
                         break;
                 }
@@ -90,7 +89,7 @@ public class GUIListener implements Listener {
             return;
         }
 
-        if (event.getView().getTitle().equals(SoulSpaceGUI.CONFIRM_TITLE)) {
+        if (event.getView().getTitle().equals(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "gui-confirm-title"))) {
             event.setCancelled(true);
             int slot = event.getRawSlot();
             if (slot == 11) {
@@ -101,25 +100,25 @@ public class GUIListener implements Listener {
                 int currentLevel = data.getLevel();
                 int maxLevel = plugin.getConfigManager().getMaxLevel();
                 if (currentLevel >= maxLevel) {
-                    player.sendMessage(ChatColor.RED + "你已达到最大等级！");
+                    player.sendMessage(plugin.getLanguageManager().getMessage(player, "max-level-reached"));
                     player.closeInventory();
                     return;
                 }
                 int cost = plugin.getConfigManager().getUpgradeCost();
                 if (plugin.getEconomy().getBalance(player) < cost) {
-                    player.sendMessage(ChatColor.RED + "你的余额不足升级所需 " + cost);
+                    player.sendMessage(plugin.getLanguageManager().getMessage(player, "insufficient-upgrade-funds", String.valueOf(cost)));
                     player.closeInventory();
                     return;
                 }
                 EconomyResponse resp = plugin.getEconomy().withdrawPlayer(player, cost);
                 if (!resp.transactionSuccess()) {
-                    player.sendMessage(ChatColor.RED + "扣款失败，请重试！");
+                    player.sendMessage(plugin.getLanguageManager().getMessage(player, "deduct-failed"));
                     return;
                 }
                 data.setLevel(currentLevel + 1);
                 plugin.getDatabaseManager().savePlayerData(data);
                 updateFeatherLore(player, data.getLevel());
-                player.sendMessage(ChatColor.GREEN + "升级成功！当前等级：" + data.getLevel());
+                player.sendMessage(plugin.getLanguageManager().getMessage(player, "upgrade-success", String.valueOf(data.getLevel())));
                 player.closeInventory();
                 SoulSpaceGUI.open(player);
             } else if (slot == 15) {
@@ -225,7 +224,9 @@ public class GUIListener implements Listener {
             }
         } else if (inv.getHolder() instanceof SoulSpaceGUI.TraverseHolder ||
                 inv.getHolder() instanceof SoulSpaceGUI.IconSelectHolder ||
-                event.getView().getTitle().equals(SoulSpaceGUI.CONFIRM_TITLE)) {
+                (event.getWhoClicked() instanceof Player &&
+                        event.getView().getTitle().equals(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(
+                                (Player) event.getWhoClicked(), "gui-confirm-title")))) {
             event.setCancelled(true);
         }
     }
@@ -254,7 +255,7 @@ public class GUIListener implements Listener {
         Bukkit.getScheduler().runTask(SoulSpacePlugin.getInstance(), () -> {
             SoulSpaceGUI.openPage(player, context.page, context.totalPages);
         });
-        player.sendMessage(ChatColor.GREEN + "页面名称已更新！");
+        player.sendMessage(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "page-renamed"));
     }
 
     private void handleUpgradeClick(Player player, SoulSpaceGUI.SoulSpaceHolder holder) {
@@ -263,12 +264,12 @@ public class GUIListener implements Listener {
         int currentLevel = data.getLevel();
         int maxLevel = SoulSpacePlugin.getInstance().getConfigManager().getMaxLevel();
         if (currentLevel >= maxLevel) {
-            player.sendMessage(ChatColor.RED + "你已达到最大等级！");
+            player.sendMessage(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "max-level-reached"));
             return;
         }
         int cost = SoulSpacePlugin.getInstance().getConfigManager().getUpgradeCost();
         if (SoulSpacePlugin.getInstance().getEconomy().getBalance(player) < cost) {
-            player.sendMessage(ChatColor.RED + "你的余额不足升级所需 " + cost);
+            player.sendMessage(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "insufficient-upgrade-funds", String.valueOf(cost)));
             return;
         }
         SoulSpaceGUI.openUpgradeConfirm(player, holder.getCurrentPage(), holder.getTotalPages());
@@ -279,7 +280,7 @@ public class GUIListener implements Listener {
         if (inv != null) SoulSpaceGUI.savePage(inv);
         player.closeInventory();
         renameContexts.put(player.getUniqueId(), new RenameContext(holder.getCurrentPage(), holder.getTotalPages()));
-        player.sendMessage(ChatColor.AQUA + "请输入新的页面名称（支持颜色代码 &，输入后回车）：");
+        player.sendMessage(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "rename-prompt"));
     }
 
     private void handleTraverseClick(Player player) {
@@ -295,18 +296,18 @@ public class GUIListener implements Listener {
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
-            if (item != null && item.getType() == Material.FEATHER && item.hasItemMeta()) {
+            if (item != null && SoulSpaceGUI.isSoulFeather(item)) {
                 ItemMeta meta = item.getItemMeta();
-                if (meta.hasDisplayName() && meta.getDisplayName().equals(ChatColor.AQUA + "[PxW特供] 灵魂空间")) {
-                    List<String> lore = new ArrayList<>();
-                    lore.add(ChatColor.AQUA + "玩家ID：" + player.getName());
-                    lore.add(ChatColor.GREEN + "空间等级：" + ChatColor.RED + newLevel + "级");
-                    lore.add(ChatColor.GOLD + "升级下一级花费：" + SoulSpacePlugin.getInstance().getConfigManager().getUpgradeCost());
-                    lore.add(ChatColor.AQUA + "点我升级空间→");
-                    meta.setLore(lore);
-                    item.setItemMeta(meta);
-                    contents[i] = item;
-                }
+                meta.setDisplayName(SoulSpacePlugin.getInstance().getLanguageManager().getSoulSpaceDisplayName(player));
+                List<String> lore = new ArrayList<>();
+                lore.add(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "feather-player-id", player.getName()));
+                lore.add(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "feather-space-level", String.valueOf(newLevel)));
+                lore.add(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "feather-upgrade-cost", String.valueOf(SoulSpacePlugin.getInstance().getConfigManager().getUpgradeCost())));
+                lore.add(SoulSpacePlugin.getInstance().getLanguageManager().getMessage(player, "feather-click-upgrade"));
+                meta.setLore(lore);
+                item.setItemMeta(meta);
+                SoulSpaceGUI.markSoulFeather(item);
+                contents[i] = item;
             }
         }
         player.getInventory().setContents(contents);

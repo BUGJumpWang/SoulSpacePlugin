@@ -19,7 +19,7 @@ public class Commands implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.RED + "请使用子命令：/ssp getbags | open | reload");
+            sender.sendMessage(msg(sender, "command-usage"));
             return true;
         }
 
@@ -32,16 +32,46 @@ public class Commands implements CommandExecutor {
                 return handleOpen(sender);
             case "reload":
                 return handleReload(sender);
+            case "lang":
+                return handleLang(sender, args);
             default:
-                sender.sendMessage(ChatColor.RED + "未知子命令：/ssp " + subCmd);
-                sender.sendMessage(ChatColor.YELLOW + "可用子命令：getbags, open, reload");
+                sender.sendMessage(msg(sender, "unknown-subcommand", "/ssp " + subCmd));
+                sender.sendMessage(msg(sender, "available-subcommands"));
                 return true;
         }
     }
 
+    private boolean handleLang(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(msg(sender, "player-only"));
+            return true;
+        }
+        Player player = (Player) sender;
+        SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
+        if (args.length < 2) {
+            player.sendMessage(msg(player, "lang-usage"));
+            return true;
+        }
+        String code = args[1].toLowerCase();
+        if (!plugin.getLanguageManager().isSupported(code)) {
+            player.sendMessage(msg(player, "lang-unknown", code));
+            return true;
+        }
+        PlayerData data = plugin.getDatabaseManager().loadPlayerData(player.getUniqueId());
+        if (data == null) {
+            data = new PlayerData(player.getUniqueId(), false, 1, code);
+        } else {
+            data.setLanguage(code);
+        }
+        plugin.getDatabaseManager().savePlayerData(data);
+        plugin.getDatabaseManager().updatePlayerLanguage(player.getUniqueId(), code);
+        player.sendMessage(msg(player, "lang-changed", code));
+        return true;
+    }
+
     private boolean handleGetBags(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "该命令只能由玩家执行！");
+            sender.sendMessage(msg(sender, "player-only"));
             return true;
         }
         Player player = (Player) sender;
@@ -55,13 +85,13 @@ public class Commands implements CommandExecutor {
 
         if (!data.isHasPaid()) {
             if (plugin.getEconomy().getBalance(player) < cost) {
-                player.sendMessage(ChatColor.RED + "你的申领资金不足！需要 " + cost);
+                player.sendMessage(msg(player, "insufficient-funds", String.valueOf(cost)));
                 return true;
             }
 
             EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, cost);
             if (!response.transactionSuccess()) {
-                player.sendMessage(ChatColor.RED + "扣款失败，请重试！");
+                player.sendMessage(msg(player, "deduct-failed"));
                 return true;
             }
             data.setHasPaid(true);
@@ -70,13 +100,13 @@ public class Commands implements CommandExecutor {
 
         ItemStack feather = createSoulFeather(player, data.getLevel());
         player.getInventory().addItem(feather);
-        player.sendMessage(ChatColor.AQUA + "你获得了" + plugin.getConfigManager().getDisplayName() + "！");
+        player.sendMessage(msg(player, "got-feather", plugin.getLanguageManager().getSoulSpaceDisplayName(player)));
         return true;
     }
 
     private boolean handleOpen(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "该命令只能由玩家执行！");
+            sender.sendMessage(msg(sender, "player-only"));
             return true;
         }
         Player player = (Player) sender;
@@ -86,27 +116,37 @@ public class Commands implements CommandExecutor {
 
     private boolean handleReload(CommandSender sender) {
         if (!sender.hasPermission("soulspace.reload")) {
-            sender.sendMessage(ChatColor.RED + "你没有权限执行此命令！");
+            sender.sendMessage(msg(sender, "no-permission"));
             return true;
         }
         SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
         plugin.getConfigManager().reload();
-        sender.sendMessage(ChatColor.GREEN + "配置文件已重载！");
+        plugin.getLanguageManager().reload();
+        sender.sendMessage(msg(sender, "config-reloaded"));
         return true;
+    }
+
+    private String msg(CommandSender sender, String key, String... args) {
+        SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
+        if (sender instanceof Player) {
+            return plugin.getLanguageManager().getMessage((Player) sender, key, args);
+        }
+        return plugin.getLanguageManager().getMessage(plugin.getLanguageManager().getDefaultLanguage(), key, args);
     }
 
     private ItemStack createSoulFeather(Player player, int level) {
         SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
         ItemStack feather = new ItemStack(Material.FEATHER);
         ItemMeta meta = feather.getItemMeta();
-        meta.setDisplayName(plugin.getConfigManager().getDisplayName());
+        meta.setDisplayName(plugin.getLanguageManager().getSoulSpaceDisplayName(player));
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         meta.setLore(Arrays.asList(
-                ChatColor.AQUA + "玩家ID：" + player.getName(),
-                ChatColor.GREEN + "空间等级：" + ChatColor.RED + level + "级"
+                plugin.getLanguageManager().getMessage(player, "feather-player-id", player.getName()),
+                plugin.getLanguageManager().getMessage(player, "feather-space-level", String.valueOf(level))
         ));
         feather.setItemMeta(meta);
+        SoulSpaceGUI.markSoulFeather(feather);
         return feather;
     }
 }

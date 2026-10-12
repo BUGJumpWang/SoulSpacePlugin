@@ -3,6 +3,7 @@ package com.bugjumpwang.soulSpacePlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -10,6 +11,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,13 +20,10 @@ import java.util.UUID;
 
 public class SoulSpaceGUI {
 
-    private static final String TITLE_PREFIX = ChatColor.AQUA + "灵魂空间 第";
-    private static final String TITLE_MID = "页/共";
-    private static final String TITLE_SUFFIX = "页";
-    public static final String CONFIRM_TITLE = ChatColor.AQUA + "是否升级？";
-    public static final String TRAVERSE_TITLE = ChatColor.AQUA + "页面遍历";
-    public static final String ICON_SELECT_TITLE = ChatColor.AQUA + "选择图标";
     private static final int SIZE = 54;
+
+    private static final NamespacedKey SOUL_FEATHER_KEY =
+            new NamespacedKey(SoulSpacePlugin.getInstance(), "soul-space-feather");
 
     public static void open(Player player) {
         SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
@@ -45,7 +44,11 @@ public class SoulSpaceGUI {
         ItemStack[] contents = Utils.deserializeItems(json);
         String pageName = (info != null) ? info.getName() : "";
 
-        String title = TITLE_PREFIX + page + TITLE_MID + totalPages + TITLE_SUFFIX;
+        String title = plugin.getLanguageManager().getMessage(player, "gui-title-prefix")
+                + page
+                + plugin.getLanguageManager().getMessage(player, "gui-title-mid")
+                + totalPages
+                + plugin.getLanguageManager().getMessage(player, "gui-title-suffix");
         if (!pageName.isEmpty()) {
             title += " " + ChatColor.translateAlternateColorCodes('&', pageName);
         }
@@ -54,7 +57,9 @@ public class SoulSpaceGUI {
         Inventory inv = Bukkit.createInventory(holder, SIZE, title);
         inv.setContents(contents);
 
-        ItemStack close = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "✘关闭空间", ChatColor.RED + "点击后关闭灵魂空间");
+        ItemStack close = createGlass(Material.RED_STAINED_GLASS_PANE,
+                plugin.getLanguageManager().getMessage(player, "gui-close-name"),
+                plugin.getLanguageManager().getMessage(player, "gui-close-lore"));
         inv.setItem(45, close);
 
         ItemStack gray = createGrayGlass();
@@ -62,9 +67,13 @@ public class SoulSpaceGUI {
 
         ItemStack prev;
         if (page > 1) {
-            prev = createGlass(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "上一页", ChatColor.AQUA + "←点我进入上一页");
+            prev = createGlass(Material.LIME_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-prev-name"),
+                    plugin.getLanguageManager().getMessage(player, "gui-prev-lore"));
         } else {
-            prev = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "已经是第一页！", ChatColor.RED + "已经是第一页！");
+            prev = createGlass(Material.RED_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-first-page"),
+                    plugin.getLanguageManager().getMessage(player, "gui-first-page"));
         }
         inv.setItem(47, prev);
 
@@ -75,9 +84,13 @@ public class SoulSpaceGUI {
 
         ItemStack next;
         if (page < totalPages) {
-            next = createGlass(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "下一页", ChatColor.AQUA + "点我进入下一页→");
+            next = createGlass(Material.LIME_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-next-name"),
+                    plugin.getLanguageManager().getMessage(player, "gui-next-lore"));
         } else {
-            next = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "已经是最后一页！", ChatColor.RED + "已经是最后一页！");
+            next = createGlass(Material.RED_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-last-page"),
+                    plugin.getLanguageManager().getMessage(player, "gui-last-page"));
         }
         inv.setItem(49, next);
 
@@ -85,19 +98,26 @@ public class SoulSpaceGUI {
 
         ItemStack nameTag = new ItemStack(Material.NAME_TAG);
         ItemMeta nameMeta = nameTag.getItemMeta();
-        nameMeta.setDisplayName(ChatColor.AQUA + "更改当页名字");
-        nameMeta.setLore(Arrays.asList(ChatColor.GRAY + "点击后输入新名字", ChatColor.GRAY + "支持颜色代码 &"));
+        nameMeta.setDisplayName(plugin.getLanguageManager().getMessage(player, "gui-rename-name"));
+        nameMeta.setLore(Arrays.asList(
+                plugin.getLanguageManager().getMessage(player, "gui-rename-lore1"),
+                plugin.getLanguageManager().getMessage(player, "gui-rename-lore2")));
         nameTag.setItemMeta(nameMeta);
         inv.setItem(51, nameTag);
 
         ItemStack compass = new ItemStack(Material.COMPASS);
         ItemMeta compMeta = compass.getItemMeta();
-        compMeta.setDisplayName(ChatColor.AQUA + "遍历");
-        compMeta.setLore(Arrays.asList(ChatColor.GRAY + "查看所有页面"));
+        compMeta.setDisplayName(plugin.getLanguageManager().getMessage(player, "gui-traverse-name"));
+        compMeta.setLore(Arrays.asList(plugin.getLanguageManager().getMessage(player, "gui-traverse-lore")));
         compass.setItemMeta(compMeta);
         inv.setItem(52, compass);
 
-        inv.setItem(53, gray);
+        ItemStack sort = new ItemStack(Material.HOPPER);
+        ItemMeta sortMeta = sort.getItemMeta();
+        sortMeta.setDisplayName(plugin.getLanguageManager().getMessage(player, "gui-sort-name"));
+        sortMeta.setLore(Arrays.asList(plugin.getLanguageManager().getMessage(player, "gui-sort-lore")));
+        sort.setItemMeta(sortMeta);
+        inv.setItem(53, sort);
 
         player.openInventory(inv);
     }
@@ -123,18 +143,39 @@ public class SoulSpaceGUI {
         SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
         ItemStack feather = new ItemStack(Material.FEATHER);
         ItemMeta meta = feather.getItemMeta();
-        meta.setDisplayName(plugin.getConfigManager().getDisplayName());
+        meta.setDisplayName(plugin.getLanguageManager().getSoulSpaceDisplayName(player));
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 
         List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.AQUA + "玩家ID：" + player.getName());
-        lore.add(ChatColor.GREEN + "空间等级：" + ChatColor.RED + data.getLevel() + "级");
-        lore.add(ChatColor.GOLD + "升级下一级花费：" + plugin.getConfigManager().getUpgradeCost());
-        lore.add(ChatColor.AQUA + "点我升级空间→");
+        lore.add(plugin.getLanguageManager().getMessage(player, "feather-player-id", player.getName()));
+        lore.add(plugin.getLanguageManager().getMessage(player, "feather-space-level", String.valueOf(data.getLevel())));
+        lore.add(plugin.getLanguageManager().getMessage(player, "feather-upgrade-cost", String.valueOf(plugin.getConfigManager().getUpgradeCost())));
+        lore.add(plugin.getLanguageManager().getMessage(player, "feather-click-upgrade"));
         meta.setLore(lore);
         feather.setItemMeta(meta);
+        markSoulFeather(feather);
         return feather;
+    }
+
+    public static void markSoulFeather(ItemStack item) {
+        if (item == null || item.getType() != Material.FEATHER) return;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        meta.getPersistentDataContainer().set(SOUL_FEATHER_KEY, PersistentDataType.BOOLEAN, true);
+        item.setItemMeta(meta);
+    }
+
+    public static boolean isSoulFeather(ItemStack item) {
+        if (item == null || item.getType() != Material.FEATHER) return false;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return false;
+        if (meta.getPersistentDataContainer().has(SOUL_FEATHER_KEY, PersistentDataType.BOOLEAN)) {
+            return true;
+        }
+        String display = meta.getDisplayName();
+        if (display == null || display.isEmpty()) return false;
+        return display.contains("[SSP]") || display.contains("灵魂空间") || display.contains("Soul Space");
     }
 
     public static void savePage(Inventory inv) {
@@ -150,20 +191,71 @@ public class SoulSpaceGUI {
         SoulSpacePlugin.getInstance().getDatabaseManager().savePage(uuid, page, json);
     }
 
+    public static void sortPage(Inventory inv) {
+        if (!(inv.getHolder() instanceof SoulSpaceHolder)) return;
+        ItemStack[] contents = inv.getContents();
+        List<ItemStack> items = new ArrayList<>();
+        for (int i = 0; i < 45; i++) {
+            ItemStack item = contents[i];
+            if (item != null && item.getType() != Material.AIR) {
+                items.add(item.clone());
+            }
+        }
+        items = mergeStacks(items);
+        items.sort((a, b) -> {
+            int cmp = a.getType().name().compareTo(b.getType().name());
+            if (cmp != 0) return cmp;
+            return Integer.compare(b.getAmount(), a.getAmount());
+        });
+        for (int i = 0; i < 45; i++) {
+            inv.setItem(i, null);
+        }
+        for (int i = 0; i < Math.min(items.size(), 45); i++) {
+            inv.setItem(i, items.get(i));
+        }
+        savePage(inv);
+    }
+
+    private static List<ItemStack> mergeStacks(List<ItemStack> items) {
+        List<ItemStack> result = new ArrayList<>();
+        for (ItemStack item : items) {
+            if (item.getMaxStackSize() > 1) {
+                for (ItemStack target : result) {
+                    if (target.isSimilar(item) && target.getAmount() < target.getMaxStackSize()) {
+                        int space = target.getMaxStackSize() - target.getAmount();
+                        int move = Math.min(space, item.getAmount());
+                        target.setAmount(target.getAmount() + move);
+                        item.setAmount(item.getAmount() - move);
+                        if (item.getAmount() <= 0) break;
+                    }
+                }
+            }
+            if (item.getAmount() > 0) {
+                result.add(item);
+            }
+        }
+        return result;
+    }
+
     public static void close(Player player) {
         player.closeInventory();
     }
 
     public static void openUpgradeConfirm(Player player, int currentPage, int totalPages) {
-        Inventory inv = Bukkit.createInventory(null, 27, CONFIRM_TITLE);
+        SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
+        Inventory inv = Bukkit.createInventory(null, 27, plugin.getLanguageManager().getMessage(player, "gui-confirm-title"));
         ItemStack gray = createGrayGlass();
         for (int i = 0; i < 9; i++) {
             inv.setItem(i, gray);
             inv.setItem(18 + i, gray);
         }
-        ItemStack confirm = createGlass(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "确认升级", ChatColor.GREEN + "点击确认升级");
+        ItemStack confirm = createGlass(Material.LIME_STAINED_GLASS_PANE,
+                plugin.getLanguageManager().getMessage(player, "gui-confirm-name"),
+                plugin.getLanguageManager().getMessage(player, "gui-confirm-lore"));
         inv.setItem(11, confirm);
-        ItemStack cancel = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "暂不升级", ChatColor.RED + "点击暂不升级");
+        ItemStack cancel = createGlass(Material.RED_STAINED_GLASS_PANE,
+                plugin.getLanguageManager().getMessage(player, "gui-cancel-name"),
+                plugin.getLanguageManager().getMessage(player, "gui-cancel-lore"));
         inv.setItem(15, cancel);
         player.openInventory(inv);
     }
@@ -182,31 +274,41 @@ public class SoulSpaceGUI {
         if (listPage > maxListPage) listPage = maxListPage;
 
         TraverseHolder holder = new TraverseHolder(uuid, listPage, selectedPage, totalLevel);
-        Inventory inv = Bukkit.createInventory(holder, SIZE, TRAVERSE_TITLE);
+        Inventory inv = Bukkit.createInventory(holder, SIZE, plugin.getLanguageManager().getMessage(player, "gui-traverse-title"));
 
         int[] graySlots = {0,1,2,3,4,5,6,7,8, 9, 17, 18, 26, 27, 35, 36, 44, 45};
         for (int slot : graySlots) {
             inv.setItem(slot, createGrayGlass());
         }
 
-        ItemStack back = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "←返回上一页", ChatColor.RED + "返回主空间");
+        ItemStack back = createGlass(Material.RED_STAINED_GLASS_PANE,
+                plugin.getLanguageManager().getMessage(player, "gui-traverse-back"),
+                plugin.getLanguageManager().getMessage(player, "gui-traverse-back-lore"));
         inv.setItem(45, back);
 
         inv.setItem(46, createGrayGlass());
 
         ItemStack prevList;
         if (listPage > 1) {
-            prevList = createGlass(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "上一页", ChatColor.AQUA + "←上一页列表");
+            prevList = createGlass(Material.LIME_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-prev-name"),
+                    plugin.getLanguageManager().getMessage(player, "gui-prev-lore"));
         } else {
-            prevList = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "已经是第一页！", ChatColor.RED + "已经是第一页！");
+            prevList = createGlass(Material.RED_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-first-page"),
+                    plugin.getLanguageManager().getMessage(player, "gui-first-page"));
         }
         inv.setItem(47, prevList);
 
         ItemStack nextList;
         if (listPage < maxListPage) {
-            nextList = createGlass(Material.LIME_STAINED_GLASS_PANE, ChatColor.GREEN + "下一页", ChatColor.AQUA + "下一页列表→");
+            nextList = createGlass(Material.LIME_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-next-name"),
+                    plugin.getLanguageManager().getMessage(player, "gui-next-lore"));
         } else {
-            nextList = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "已经是最后一页！", ChatColor.RED + "已经是最后一页！");
+            nextList = createGlass(Material.RED_STAINED_GLASS_PANE,
+                    plugin.getLanguageManager().getMessage(player, "gui-last-page"),
+                    plugin.getLanguageManager().getMessage(player, "gui-last-page"));
         }
         inv.setItem(48, nextList);
 
@@ -223,14 +325,14 @@ public class SoulSpaceGUI {
         for (int i = startIndex; i < endIndex; i++) {
             int pageNum = i + 1;
             DatabaseManager.PageInfo info = plugin.getDatabaseManager().loadPageInfo(uuid, pageNum);
-            String pageName = (info != null && !info.getName().isEmpty()) ? info.getName() : "未命名";
+            String pageName = (info != null && !info.getName().isEmpty()) ? info.getName() : plugin.getLanguageManager().getMessage(player, "gui-unnamed");
             String iconMat = (info != null && info.getIcon() != null) ? info.getIcon() : "STONE";
             Material mat = Material.getMaterial(iconMat);
             if (mat == null) mat = Material.STONE;
 
             ItemStack display = new ItemStack(mat);
             ItemMeta meta = display.getItemMeta();
-            String displayName = ChatColor.GREEN + "第" + pageNum + "页 " + ChatColor.translateAlternateColorCodes('&', pageName);
+            String displayName = ChatColor.GREEN + plugin.getLanguageManager().getMessage(player, "gui-page-entry", String.valueOf(pageNum)) + " " + ChatColor.translateAlternateColorCodes('&', pageName);
             meta.setDisplayName(displayName);
             if (pageNum == selectedPage) {
                 meta.addEnchant(Enchantment.UNBREAKING, 1, true);
@@ -244,15 +346,15 @@ public class SoulSpaceGUI {
         if (selectedPage > 0 && selectedPage <= totalLevel) {
             ItemStack door = new ItemStack(Material.OAK_DOOR);
             ItemMeta doorMeta = door.getItemMeta();
-            doorMeta.setDisplayName(ChatColor.GREEN + "进入该储存页");
-            doorMeta.setLore(Arrays.asList(ChatColor.GRAY + "点击跳转到此页"));
+            doorMeta.setDisplayName(plugin.getLanguageManager().getMessage(player, "gui-enter-page"));
+            doorMeta.setLore(Arrays.asList(plugin.getLanguageManager().getMessage(player, "gui-enter-page-lore")));
             door.setItemMeta(doorMeta);
             inv.setItem(51, door);
 
             ItemStack redstone = new ItemStack(Material.REDSTONE);
             ItemMeta redMeta = redstone.getItemMeta();
-            redMeta.setDisplayName(ChatColor.AQUA + "更改图标");
-            redMeta.setLore(Arrays.asList(ChatColor.GREEN + "为自己的页面设置图标"));
+            redMeta.setDisplayName(plugin.getLanguageManager().getMessage(player, "gui-change-icon"));
+            redMeta.setLore(Arrays.asList(plugin.getLanguageManager().getMessage(player, "gui-change-icon-lore")));
             redstone.setItemMeta(redMeta);
             inv.setItem(52, redstone);
         }
@@ -261,8 +363,9 @@ public class SoulSpaceGUI {
     }
 
     public static void openIconSelectGUI(Player player, int pageToModify, int listPage, int selectedPage) {
+        SoulSpacePlugin plugin = SoulSpacePlugin.getInstance();
         IconSelectHolder holder = new IconSelectHolder(player.getUniqueId(), pageToModify, listPage, selectedPage);
-        Inventory inv = Bukkit.createInventory(holder, 27, ICON_SELECT_TITLE);
+        Inventory inv = Bukkit.createInventory(holder, 27, plugin.getLanguageManager().getMessage(player, "gui-icon-select-title"));
 
         Material[] row1 = {Material.DIAMOND_PICKAXE, Material.BUCKET, Material.DIAMOND_CHESTPLATE,
                 Material.REDSTONE, Material.IRON_INGOT, Material.REDSTONE_TORCH,
@@ -285,7 +388,9 @@ public class SoulSpaceGUI {
             inv.setItem(9 + i, item);
         }
 
-        ItemStack back = createGlass(Material.RED_STAINED_GLASS_PANE, ChatColor.RED + "←返回到上一页", ChatColor.RED + "返回遍历列表");
+        ItemStack back = createGlass(Material.RED_STAINED_GLASS_PANE,
+                plugin.getLanguageManager().getMessage(player, "gui-icon-back"),
+                plugin.getLanguageManager().getMessage(player, "gui-icon-back-lore"));
         inv.setItem(18, back);
         for (int i = 19; i < 27; i++) {
             inv.setItem(i, createGrayGlass());
